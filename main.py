@@ -1,120 +1,80 @@
-import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import (
-    Application,
-    CallbackQueryHandler,
-    CommandHandler,
-    ContextTypes,
-)
+
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 BOT_TOKEN = "8894345960:AAE6iepstgfDnhMQlLKe-_L5y-aMXD84BoA"
+ADMIN_USERNAME = "nageshsahoo01" # Apna Telegram username yahan sahi daalein
+UPI_ID = "nageshsahoo01@upi"
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
-)
-
+# Admin check function
+def is_admin(username):
+    return username == ADMIN_USERNAME
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
-    welcome_text = (
-        f"🔥 **WELCOME TO PANELSHOP STORE** 🔥\n\n"
-        f"👋 Hello {user.first_name}!\n"
-        f"🆔 Your ID: `{user.id}`\n\n"
-        f"Niche diye gaye buttons se shop ya balance add karein:"
-    )
-
+    text = (f"🔥 **BALA MOD APK STORE** 🔥\n"
+            f"👋 Hello {user.first_name}!\n"
+            f"🆔 Your ID: `{user.id}`\n\n"
+            f"Niche diye gaye buttons se shop ya account manage karein:")
+    
     keyboard = [
-        [
-            InlineKeyboardButton("🛒 Shop Now", callback_data="shop"),
-            InlineKeyboardButton("💳 Add Balance", callback_data="add_bal"),
-        ],
-        [
-            InlineKeyboardButton("👤 My Profile", callback_data="profile"),
-            InlineKeyboardButton("📜 My Orders", callback_data="orders"),
-        ],
-        [
-            InlineKeyboardButton(
-                "📞 Admin Support", url="https://t.me/indsahoofam"
-            )
-        ],
+        [InlineKeyboardButton("🛒 Shop Now", callback_data="shop"), InlineKeyboardButton("💬 Admin Support", url=f"https://t.me/{ADMIN_USERNAME}")],
     ]
-
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    if update.message:
-        await update.message.reply_text(
-            welcome_text, reply_markup=reply_markup, parse_mode="Markdown"
-        )
-    elif update.callback_query:
-        await update.callback_query.message.edit_text(
-            welcome_text, reply_markup=reply_markup, parse_mode="Markdown"
-        )
-
+    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
-    if query.data == "shop":
+    data = query.data
+    
+    if data == "shop":
         keyboard = [
-            [
-                InlineKeyboardButton(
-                    "⚡ 1 Hour Key - ₹20", callback_data="buy_1h"
-                )
-            ],
-            [
-                InlineKeyboardButton(
-                    "🔥 24 Hour Key - ₹100", callback_data="buy_24h"
-                )
-            ],
-            [InlineKeyboardButton("⬅️ Back", callback_data="main_menu")],
+            [InlineKeyboardButton("⏰ 1 Hour — ₹33.00", callback_data="buy_1h"), InlineKeyboardButton("⏰ 3 Hours — ₹67.50", callback_data="buy_3h")],
+            [InlineKeyboardButton("📅 1 Day — ₹432.00", callback_data="buy_1d")],
+            [InlineKeyboardButton("🔙 Back to Menu", callback_data="main_menu")]
         ]
-        await query.message.edit_text(
-            "🛒 **SELECT PRODUCT:**\n\nApna desired plan select karein:",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="Markdown",
-        )
+        await query.edit_message_text("🛒 **Choose duration:**", reply_markup=InlineKeyboardMarkup(keyboard))
 
-    elif query.data == "add_bal":
-        pay_url = f"https://panelshop-production.up.railway.app/pay?user_id={query.from_user.id}"
-        keyboard = [
-            [InlineKeyboardButton("📲 Pay via UPI QR", url=pay_url)],
-            [InlineKeyboardButton("⬅️ Back", callback_data="main_menu")],
-        ]
-        await query.message.edit_text(
-            "💳 **ADD BALANCE (Auto Gateway)**\n\n"
-            "Niche button par click karke Instant Payment karein. Payment complete hote hi balance auto-add ho jayega!",
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="Markdown",
-        )
+    elif data.startswith("buy_"):
+        price = "33.00" if "1h" in data else "67.50" if "3h" in data else "432.00"
+        text = (f"💰 **Amount to Pay:** ₹{price}\n"
+                f"📲 **UPI ID:** `{UPI_ID}`\n\n"
+                f"Payment karne ke baad screenshot aur UTR mujhe (@{ADMIN_USERNAME}) ko bhejen.\n"
+                f"Button daba kar confirm karein ki aapne payment kar diya hai.")
+        keyboard = [[InlineKeyboardButton("✅ I have paid", callback_data="confirm_pay")], [InlineKeyboardButton("🔙 Back", callback_data="shop")]]
+        await query.edit_message_text(text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
 
-    elif query.data == "profile":
-        profile_text = (
-            f"👤 **YOUR PROFILE**\n\n"
-            f"• Name: {query.from_user.first_name}\n"
-            f"• ID: `{query.from_user.id}`\n"
-            f"• Wallet Balance: ₹0.00\n"
-        )
-        keyboard = [[InlineKeyboardButton("⬅️ Back", callback_data="main_menu")]]
-        await query.message.edit_text(
-            profile_text,
-            reply_markup=InlineKeyboardMarkup(keyboard),
-            parse_mode="Markdown",
-        )
+    elif data == "confirm_pay":
+        await query.edit_message_text("⏳ **Payment received.**\nAdmin verification pending hai. Thodi der wait karein, main aapko key bhej dunga.")
 
-    elif query.data == "main_menu":
+    elif data == "main_menu":
         await start(update, context)
 
+# Admin Command: /sendkey <user_id> <key>
+async def send_key(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.username):
+        await update.message.reply_text("❌ Aap Admin nahi hain!")
+        return
+    
+    if len(context.args) < 2:
+        await update.message.reply_text("Usage: /sendkey <user_id> <key>")
+        return
+
+    user_id = context.args[0]
+    key = context.args[1]
+    
+    try:
+        await context.bot.send_message(chat_id=user_id, text=f"🎉 **Payment Verified!**\n\n🔑 **Your Key:** `{key}`\n\nEnjoy using BALA MOD APK!", parse_mode="Markdown")
+        await update.message.reply_text(f"✅ Key successfully sent to {user_id}")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Error: {e}")
 
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("sendkey", send_key)) # Admin command register kiya
     app.add_handler(CallbackQueryHandler(button_handler))
-
-    print("Bot is running...")
     app.run_polling()
-
 
 if __name__ == "__main__":
     main()
