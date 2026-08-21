@@ -3,10 +3,10 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # --- CONFIGURATION ---
-BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
-ADMIN_ID = 123456789  # Apna Telegram ID yahan daalo
+BOT_TOKEN = "8894345960:AAE6iepstgfDnhMQlLKe-_L5y-aMXD84BoA"
+ADMIN_ID = 5691234567  # Yadi zaroorat ho toh apna sahi Telegram ID yahan daal lena
 
-# Razorpay API Credentials (Added)
+# Razorpay API Credentials
 RAZORPAY_KEY_ID = "rzp_test_TSGmCyNHDUE4BX"
 RAZORPAY_KEY_SECRET = "KYh5h2TxUtFSME0Znso3NZms"
 
@@ -78,7 +78,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         plan_key = data.split("_")[1]
         if plan_key in PLANS:
             p_info = PLANS[plan_key]
-            text = f"💳 **PAYMENT DETAILS**\n\nPlan: {p_info['name']}\nAmount: ₹{p_info['price']}\n\n*Razorpay Key configured successfully. Proceed to pay.*"
+            text = f"💳 **PAYMENT DETAILS**\n\nPlan: {p_info['name']}\nAmount: ₹{p_info['price']}\n\n*Click below once you are ready.*"
             keyboard = [
                 [InlineKeyboardButton("✅ I Have Paid", callback_data=f"paid_{plan_key}")], 
                 [InlineKeyboardButton("🔙 Back", callback_data="shop")]
@@ -99,7 +99,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(f"👤 Your ID: `{query.from_user.id}`\nBalance: ₹0.00", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="main")]]))
 
     elif data == "support":
-        await query.edit_message_text("💬 Contact Admin: @nageshsahoo01", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="main")]]))
+        await query.edit_message_text("💬 Contact Admin: @nageshsahoo01", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="main")]]))
 
     elif data == "main":
         await start(update, context)
