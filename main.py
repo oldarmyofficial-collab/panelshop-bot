@@ -4,8 +4,24 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 
 # --- CONFIGURATION ---
 BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
-ADMIN_ID = 123456789  # Apna Telegram ID yahan daalo (userinfobot se nikalo)
-UPI_ID = "nageshsahoo01@upi"
+ADMIN_ID = 123456789  # Apna Telegram ID yahan daalo
+
+# Razorpay API Credentials (Added)
+RAZORPAY_KEY_ID = "rzp_test_TSGmCyNHDUE4BX"
+RAZORPAY_KEY_SECRET = "KYh5h2TxUtFSME0Znso3NZms"
+
+# Plan Details & Prices
+PLANS = {
+    "1h": {"name": "1 Hour", "price": 33.00},
+    "3h": {"name": "3 Hours", "price": 67.50},
+    "6h": {"name": "6 Hours", "price": 108.00},
+    "12h": {"name": "12 Hours", "price": 216.00},
+    "1d": {"name": "1 Day", "price": 432.00},
+    "2d": {"name": "2 Days", "price": 864.00},
+    "3d": {"name": "3 Days", "price": 1275.00},
+    "5d": {"name": "5 Days", "price": 2100.00},
+    "7d": {"name": "7 Days", "price": 2700.00}
+}
 
 # Database Setup
 def init_db():
@@ -26,12 +42,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     conn.commit()
     conn.close()
 
-    text = f"🏢 — BALA MOD SHOP — 🏢\n\n👋 Welcome, {user.first_name}!\n\n🚀 Click Shop Now to Start!"
+    text = (
+        "🔥 **BALA MOD APK** 🔥\n"
+        "📱 **NON-ROOT**\n"
+        "✅ **MAIN ID SAFE**\n\n"
+        f"👋 Welcome, {user.first_name}!\n\n🚀 Click Shop Now to Start!"
+    )
     keyboard = [
         [InlineKeyboardButton("🛍️ Shop Now", callback_data="shop")],
         [InlineKeyboardButton("👤 Profile", callback_data="profile"), InlineKeyboardButton("💬 Support", callback_data="support")]
     ]
-    await update.message.reply_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
+    await update.message.reply_text(text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -40,30 +61,42 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data == "shop":
         keyboard = [
-            [InlineKeyboardButton("⏰ 1 Hour - ₹33", callback_data="buy_1h")],
-            [InlineKeyboardButton("📅 1 Day - ₹432", callback_data="buy_1d")],
+            [InlineKeyboardButton("⏰ 1 Hour — ₹33.00", callback_data="buy_1h")],
+            [InlineKeyboardButton("⏰ 3 Hours — ₹67.50", callback_data="buy_3h")],
+            [InlineKeyboardButton("⏰ 6 Hours — ₹108.00", callback_data="buy_6h")],
+            [InlineKeyboardButton("⏰ 12 Hours — ₹216.00", callback_data="buy_12h")],
+            [InlineKeyboardButton("📅 1 Day — ₹432.00", callback_data="buy_1d")],
+            [InlineKeyboardButton("📅 2 Days — ₹864.00", callback_data="buy_2d")],
+            [InlineKeyboardButton("📅 3 Days — ₹1275.00", callback_data="buy_3d")],
+            [InlineKeyboardButton("📅 5 Days — ₹2100.00", callback_data="buy_5d")],
+            [InlineKeyboardButton("📅 7 Days — ₹2700.00", callback_data="buy_7d")],
             [InlineKeyboardButton("🔙 Back", callback_data="main")]
         ]
-        await query.edit_message_text("📦 Select your plan:", reply_markup=InlineKeyboardMarkup(keyboard))
+        await query.edit_message_text("📦 **INDIAN PRICE LIST 🇮🇳**\n\nSelect your plan:", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data.startswith("buy_"):
-        plan = data.split("_")[1]
-        price = "33" if plan == "1h" else "432"
-        text = f"💳 **PAYMENT DETAILS**\n\nAmount: ₹{price}\nUPI ID: `{UPI_ID}`\n\n*Payment karne ke baad neeche button dabayein.*"
-        keyboard = [[InlineKeyboardButton("✅ I Have Paid", callback_data=f"paid_{plan}")], [InlineKeyboardButton("🔙 Back", callback_data="shop")]]
-        await query.edit_message_text(text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
+        plan_key = data.split("_")[1]
+        if plan_key in PLANS:
+            p_info = PLANS[plan_key]
+            text = f"💳 **PAYMENT DETAILS**\n\nPlan: {p_info['name']}\nAmount: ₹{p_info['price']}\n\n*Razorpay Key configured successfully. Proceed to pay.*"
+            keyboard = [
+                [InlineKeyboardButton("✅ I Have Paid", callback_data=f"paid_{plan_key}")], 
+                [InlineKeyboardButton("🔙 Back", callback_data="shop")]
+            ]
+            await query.edit_message_text(text, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
 
     elif data.startswith("paid_"):
-        plan = data.split("_")[1]
+        plan_key = data.split("_")[1]
+        plan_name = PLANS[plan_key]["name"] if plan_key in PLANS else plan_key
         user = query.from_user
         await query.edit_message_text("⏳ Payment request received. Admin verify kar raha hai, wait karein.")
         
         # Admin ko notification bhejo
-        admin_text = f"🔔 **NEW PAYMENT ALERT**\n\nUser: {user.first_name}\nID: `{user.id}`\nPlan: {plan}\n\nKey bhejne ke liye niche command use karein:\n`/sendkey {user.id} <KEY>`"
+        admin_text = f"🔔 **NEW PAYMENT ALERT**\n\nUser: {user.first_name}\nID: `{user.id}`\nPlan: {plan_name}\n\nKey bhejne ke liye niche command use karein:\n`/sendkey {user.id} <KEY>`"
         await context.bot.send_message(chat_id=ADMIN_ID, text=admin_text, parse_mode="Markdown")
 
     elif data == "profile":
-        await query.edit_message_text(f"👤 Your ID: `{query.from_user.id}`\nBalance: $0.00", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="main")]]))
+        await query.edit_message_text(f"👤 Your ID: `{query.from_user.id}`\nBalance: ₹0.00", parse_mode="Markdown", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="main")]]))
 
     elif data == "support":
         await query.edit_message_text("💬 Contact Admin: @nageshsahoo01", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("🔙 Back", callback_data="main")]]))
@@ -98,5 +131,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
